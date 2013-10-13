@@ -22,7 +22,6 @@ class Splatter(object):
         tsx, tsy = t.shape[:2]  # frame shape
         ssx, ssy = s.shape[:2] # splat shape
         xd, yd = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy)
-        print xd, yd
         
         tx, txd = max(xd, 0), min(xd + ssx, tsx) # where the splat starts and ends, x axis
         ty, tyd = max(0, yd), min(yd + ssy, tsy) # where the splat starts and ends, y axis
@@ -33,11 +32,11 @@ class Splatter(object):
     
     def splat_mask(self, m):
         "Gets a mask and splats it"
-        t = m.copy()
-        for i in xrange(300):
+        t = np.zeros(m.shape, np.uint8)
+        for i in xrange(30):
             self._splat_once(t)
         
-        return t & ~m
+        return t & m
 
 
     
