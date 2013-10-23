@@ -2,23 +2,27 @@ import cv2
 import numpy as np
 import time
 import os
+import random
 
 class NoSplatsException(Exception):
     pass
 
 class Splatter(object):
-
+    PERCENTAGE = 5.0 / 100 # Size of splat/image
     splats = []
-    def __init__(self, splats_dir='.'):
+    def __init__(self, imgShape=(480, 640), splats_dir='.'):
+        shape_per = (int(imgShape[0] * self.PERCENTAGE), int(imgShape[1] * self.PERCENTAGE))
         for f in os.listdir(splats_dir):
             splat = cv2.imread(os.path.join(splats_dir, f), 0)
             if splat is not None:
+                splat = cv2.resize(splat, shape_per, interpolation=cv2.cv.CV_INTER_NN)
                 self.splats.append(splat)
         if not self.splats:
             raise NoSplatsException(os.path.realpath(splats_dir))
+        s = random.choice(self.splats)
                 
     def _splat_once(self, t):
-        s = np.random.choice(self.splats)
+        s = random.choice(self.splats)
         tsx, tsy = t.shape[:2]  # frame shape
         ssx, ssy = s.shape[:2] # splat shape
         xd, yd = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy)
@@ -33,13 +37,11 @@ class Splatter(object):
     def splat_mask(self, m):
         "Gets a mask and splats it"
         t = np.zeros(m.shape, np.uint8)
-        for i in xrange(30):
+        for i in xrange(300):
             self._splat_once(t)
         
         return t & m
 
-
-    
 
 def main():
     cam = cv2.VideoCapture(0)
@@ -54,14 +56,13 @@ def main():
     cv2.moveWindow(winName, 0, 0)
     cv2.moveWindow(diffWin, imgWidth, 0)
     thresh = 20
-    s = Splatter('splat_db')
+    s = Splatter((imgHeight, imgWidth), 'splat_db')
     video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (imgWidth, imgHeight))
     frames = []
     
     time0 = time.time()
     t0 = cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY)
     while True:
-        
         # print 0.040 - (time.time() - time0), time.time(), time0
         # time.sleep(max(0, 0.040 - (time.time() - time0)))
         # time0 = time.time()
@@ -78,7 +79,7 @@ def main():
         
         key = cv2.waitKey(1)
         if key == ord('q'):
-            cv2.destroyWindow(winName)
+            cv2.destroyAllWindows()
             break
         elif key == ord('w'):
             thresh = min(255, thresh + 10)
