@@ -5,8 +5,7 @@ color = 100
 height = 100
 width = 500
 
-XVID_FOURCC = int("".join("%x" % ord(c) for c in 'XVID')
-video = cv2.VideoWriter(r"circle.avi", XVID_FOURCC, 16), 25, (width,height))
+video = cv2.VideoWriter(r"circle.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (width,height))
 # video = cv2.VideoWriter(r"circle.avi", 0x58564944, 25, (width,height))
 frames = []
 
