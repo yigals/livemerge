@@ -11,7 +11,7 @@ class Splatter(object):
     splats = []
     def __init__(self, splats_dir='.'):
         for f in os.listdir(splats_dir):
-            splat = cv2.imread(os.path.join(splats_dir, f))
+            splat = cv2.imread(os.path.join(splats_dir, f), 0)
             if splat is not None:
                 self.splats.append(splat)
         if not self.splats:
@@ -49,38 +49,49 @@ def main():
     cv2.namedWindow(winName)
     cv2.namedWindow(diffWin)
 
-    # Read and blur background image first:
-    time0 = time.time()
-    t_back = np.float32(cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY))
-    while (time.time() < time0 + 0.25):
-        print time.time()
-        cv2.accumulateWeighted(cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY), t_back, 0.04)
-        t_back = cv2.GaussianBlur(t_back, (5, 5), 0)
-    t_back = cv2.convertScaleAbs(t_back)
-
-    imgRows, imgCols = np.shape(t_back)
+    imgHeight = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
+    imgWidth = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
     cv2.moveWindow(winName, 0, 0)
-    cv2.moveWindow(diffWin, imgCols, 0)
-
+    cv2.moveWindow(diffWin, imgWidth, 0)
+    thresh = 20
+    s = Splatter('splat_db')
+    video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (imgWidth, imgHeight))
+    frames = []
+    
+    time0 = time.time()
+    t0 = cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY)
     while True:
+        
+        # print 0.040 - (time.time() - time0), time.time(), time0
+        # time.sleep(max(0, 0.040 - (time.time() - time0)))
+        # time0 = time.time()
         t = cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY)
-        time0 = time.time()
-        diff = cv2.absdiff(t_back, t)
-        diff = cv2.GaussianBlur(diff, (5, 5), 0)
+        diff = cv2.absdiff(t, t0)
+        diff = cv2.medianBlur(diff, 3)
         cv2.imshow(diffWin, diff)
-        ret, diff = cv2.threshold(diff, 117, 255, cv2.THRESH_BINARY)
+        ret, diff = cv2.threshold(diff, thresh, 255, cv2.THRESH_BINARY)
+        diff = s.splat_mask(diff) | s.splat_mask(~diff)
         
         cv2.imshow(winName, diff)
-        # cpdiff = diff.copy()
-        # contours, hierarchy = cv2.findContours(cpdiff, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        frames.append(cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR))
+        t0 = t
         
-        # cv2.drawContours(cpdiff, contours, -1, (0,255,0), 2)
-        # cv2.imshow(winName, cpdiff)
-        
-        key = cv2.waitKey(10)
+        key = cv2.waitKey(1)
         if key == ord('q'):
             cv2.destroyWindow(winName)
             break
+        elif key == ord('w'):
+            thresh = min(255, thresh + 10)
+            print thresh
+        elif key == ord('e'):
+            thresh = max(0, thresh - 10)
+            print thresh
+        elif key == ord('s'):
+            cv2.waitKey()
+            print thresh
 
+    for frame in frames: video.write(frame)
+
+    video.release()
 if __name__ == '__main__':
     main()
