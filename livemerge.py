@@ -57,7 +57,6 @@ def main():
     cv2.moveWindow(diffWin, imgWidth, 0)
     thresh = 20
     s = Splatter((imgHeight, imgWidth), 'splat_db')
-    video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (imgWidth, imgHeight))
     frames = []
     
     time0 = time.time()
@@ -90,9 +89,13 @@ def main():
         elif key == ord('s'):
             cv2.waitKey()
             print thresh
-
+    
+    cam.release()
+    
+    # video = cv2.VideoWriter(r"result.avi", -1, len(frames) / (time.time() - start_time), (imgWidth, imgHeight))
+    video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (imgWidth, imgHeight))
     for frame in frames: video.write(frame)
-
     video.release()
+
 if __name__ == '__main__':
     main()
