@@ -17,14 +17,15 @@ def safe_embed(t, f, target_pnt):
     """
     tsx, tsy = t.shape[:2]
     fsx, fsy = f.shape[:2]
-    xd, yd = target_pnt
+    dx, dy = target_pnt
             
-    tx, txd = max(xd, 0), min(xd + fsx, tsx) # where the embedding starts and ends, x axis
-    ty, tyd = max(0, yd), min(yd + fsy, tsy) # where the embedding starts and ends, y axis
-    fx = max(0, -xd)
-    fy = max(0, -yd)
+    tx, tdx = max(dx, 0), min(dx + fsx, tsx) # where the embedding starts and ends, x axis
+    ty, tdy = max(0, dy), min(dy + fsy, tsy) # where the embedding starts and ends, y axis
+    fx = max(0, -dx)
+    fy = max(0, -dy)
     
-    return tx, txd, ty, tyd, fx, fx + min(fsx, txd - tx), fy, fy + min(fsy, tyd - ty)
+    return tx, tdx, ty, tdy, fx, fx + min(fsx, tdx - tx), fy, fy + min(fsy, tdy - ty)
+    
 
 
 class NoSplatsException(Exception):
@@ -48,10 +49,10 @@ class Splatter(object):
         s = random.choice(self.splats)
         tsx, tsy = t.shape[:2] # frame shape
         ssx, ssy = s.shape[:2] # splat shape
-        xd, yd = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy) # destination point
+        dx, dy = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy) # destination point
 
-        tx, txd, ty, tyd, sx, sxd, sy, syd = safe_embed(t, s, (xd, yd))
-        t[tx : txd, ty : tyd] |= s[sx : sxd, sy : syd]
+        tx, tdx, ty, tdy, sx, sdx, sy, sdy = safe_embed(t, s, (dx, dy))
+        t[tx : tdx, ty : tdy] |= s[sx : sdx, sy : sdy]
     
     def splat_mask(self, m):
         "Gets a mask and splats it"
