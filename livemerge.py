@@ -9,6 +9,24 @@ import time
 import os
 import random
 
+
+def safe_embed(t, f, target_pnt):
+    """
+    Allows 'out of bounds' copies from f to t. Returns two rects - t and f.
+    Assumes target_pnt makes sense - not too negative or large.
+    """
+    tsx, tsy = t.shape[:2]
+    fsx, fsy = f.shape[:2]
+    xd, yd = target_pnt
+            
+    tx, txd = max(xd, 0), min(xd + fsx, tsx) # where the embedding starts and ends, x axis
+    ty, tyd = max(0, yd), min(yd + fsy, tsy) # where the embedding starts and ends, y axis
+    fx = max(0, -xd)
+    fy = max(0, -yd)
+    
+    return tx, txd, ty, tyd, fx, fx + min(fsx, txd - tx), fy, fy + min(fsy, tyd - ty)
+
+
 class NoSplatsException(Exception):
     pass
 
@@ -28,16 +46,12 @@ class Splatter(object):
                 
     def _splat_once(self, t):
         s = random.choice(self.splats)
-        tsx, tsy = t.shape[:2]  # frame shape
+        tsx, tsy = t.shape[:2] # frame shape
         ssx, ssy = s.shape[:2] # splat shape
-        xd, yd = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy)
-        
-        tx, txd = max(xd, 0), min(xd + ssx, tsx) # where the splat starts and ends, x axis
-        ty, tyd = max(0, yd), min(yd + ssy, tsy) # where the splat starts and ends, y axis
-        sx = max(0, -xd)
-        sy = max(0, -yd)
+        xd, yd = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy) # destination point
 
-        t[tx : txd, ty : tyd] |= s[sx : sx + min(ssx, txd - tx), sy : sy + min(ssy, tyd - ty)]
+        tx, txd, ty, tyd, sx, sxd, sy, syd = safe_embed(t, s, (xd, yd))
+        t[tx : txd, ty : tyd] |= s[sx : sxd, sy : syd]
     
     def splat_mask(self, m):
         "Gets a mask and splats it"
