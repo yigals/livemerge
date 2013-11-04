@@ -96,7 +96,7 @@ def main():
         frames.append(cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
         
-        key = cv2.waitKey(1)
+        key = cv2.waitKey(10)
         if key == ord('q'):
             cv2.destroyAllWindows()
             break
