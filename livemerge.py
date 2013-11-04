@@ -1,3 +1,8 @@
+# Based spiritually on "Emerging Images" by Niloy J. Mitra, Hung-Kuo Chu,
+#    Tong-Yee Lee, Lior Wolf, Hezy Yeshurun, Daniel Cohen-Or.
+# Parts of the code are blatantly stolen from opencv sample code.
+# You are free to do whatever you like with this code, but nothing dirty ;)
+
 import cv2
 import numpy as np
 import time
@@ -56,24 +61,39 @@ def main():
     cv2.moveWindow(winName, 0, 0)
     cv2.moveWindow(diffWin, imgWidth, 0)
     thresh = 20
+    MHI_DURATION = 0.2
+    MAX_TIME_DELTA = 0.1
     s = Splatter((imgHeight, imgWidth), 'splat_db')
     frames = []
     
-    time0 = time.time()
-    t0 = cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY)
+    start_time = time0 = time.time()
+    _, t0 = cam.read()
+    motion_history = np.zeros((imgHeight, imgWidth), np.float32)
     while True:
-        # print 0.040 - (time.time() - time0), time.time(), time0
-        # time.sleep(max(0, 0.040 - (time.time() - time0)))
-        # time0 = time.time()
-        t = cv2.cvtColor(cam.read()[1], cv2.COLOR_RGB2GRAY)
+        _, t = cam.read()
+        if time.time() > time0 + 1:
+            print len(frames)
+            time0 = time.time()
         diff = cv2.absdiff(t, t0)
-        diff = cv2.medianBlur(diff, 3)
-        cv2.imshow(diffWin, diff)
-        ret, diff = cv2.threshold(diff, thresh, 255, cv2.THRESH_BINARY)
-        diff = s.splat_mask(diff) | s.splat_mask(~diff)
+        gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+        gray_diff = cv2.medianBlur(gray_diff, 3)
+        ret, mask = cv2.threshold(gray_diff, thresh, 255, cv2.THRESH_BINARY)
+        vis = s.splat_mask(mask) | s.splat_mask(~mask)
         
-        cv2.imshow(winName, diff)
-        frames.append(cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR))
+        timestamp = cv2.getTickCount() / cv2.getTickFrequency() # unsure why can't use time.time()...
+        cv2.updateMotionHistory(mask, motion_history, timestamp, MHI_DURATION)
+        seg_mask, seg_bounds = cv2.segmentMotion(motion_history, timestamp, MAX_TIME_DELTA)
+        
+        for rect in list(seg_bounds):
+            x, y, w, h = rect
+            area = w * h
+            if area < 64 ** 2:
+                continue
+            cv2.rectangle(diff, (x, y), (x+w, y+h), (0, 255, 0))
+        
+        cv2.imshow(diffWin, diff)
+        cv2.imshow(winName, vis)
+        frames.append(cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
         
         key = cv2.waitKey(1)
@@ -93,7 +113,7 @@ def main():
     cam.release()
     
     # video = cv2.VideoWriter(r"result.avi", -1, len(frames) / (time.time() - start_time), (imgWidth, imgHeight))
-    video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (imgWidth, imgHeight))
+    video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), len(frames) / (time.time() - start_time), (imgWidth, imgHeight))
     for frame in frames: video.write(frame)
     video.release()
 
