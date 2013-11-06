@@ -84,6 +84,36 @@ class Splatter(object):
         return t & m
 
 
+# for each contour in a frame:
+#     if it lies in any rectangle:
+#         for each in random [3-8]:
+#             randomly erode/dilate
+#             randomly rotate
+#             randomly paste result
+def c_p_p(frame, rects):
+    "randomly copy-perturb-paste contour-contents of a rect"
+    cpframe = frame.copy()
+    all_contours, _ = cv2.findContours(cpframe, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours_brects = []
+    for c in all_contours:
+        brect = cv2.boundingRect(c)
+        for rect in rects:
+            if rect_intersection(brect, rect):
+                contours_brects.append((c, brect))
+                break
+    
+    for c, brect in contours_brects:
+        cpframe.fill(0)
+        cv2.drawContours(cpframe, [c], 0, 255, -1)
+        x, y, w, h = brect
+        subframe = frame[x:x+w, y:y+h]
+        # subframe = rand_e_d(subframe)
+        # subframe = rand_rotate(subframe)
+        safe_random_embed(frame, subframe, mask=True)
+        
+    return frame
+
+
 def main():
     cam = cv2.VideoCapture(0)
 
@@ -120,13 +150,11 @@ def main():
         cv2.updateMotionHistory(mask, motion_history, timestamp, MHI_DURATION)
         seg_mask, seg_bounds = cv2.segmentMotion(motion_history, timestamp, MAX_TIME_DELTA)
         
-        for rect in list(seg_bounds):
+        rects = [rect for rect in seg_bounds if rect[2] * rect[3] > 64 ** 2]
+        for rect in rects:
             x, y, w, h = rect
-            area = w * h
-            if area < 64 ** 2:
-                continue
             cv2.rectangle(diff, (x, y), (x+w, y+h), (0, 255, 0))
-        
+        vis |= c_p_p(mask, rects)
         cv2.imshow(diffWin, diff)
         cv2.imshow(winName, vis)
         frames.append(cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
