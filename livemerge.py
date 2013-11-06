@@ -153,9 +153,9 @@ def main():
         rects = [rect for rect in seg_bounds if rect[2] * rect[3] > 64 ** 2]
         for rect in rects:
             x, y, w, h = rect
-            cv2.rectangle(diff, (x, y), (x+w, y+h), (0, 255, 0))
+            cv2.rectangle(t, (x, y), (x+w, y+h), (0, 255, 0))
         vis |= c_p_p(mask, rects)
-        cv2.imshow(diffWin, diff)
+        cv2.imshow(diffWin, t)
         cv2.imshow(winName, vis)
         frames.append(cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
