@@ -27,6 +27,15 @@ def safe_embed(t, f, target_pnt):
     return tx, tdx, ty, tdy, fx, fx + min(fsx, tdx - tx), fy, fy + min(fsy, tdy - ty)
     
 
+def safe_random_embed(t, f):
+    """
+    Randomly embeds frame f in t. Uses safe_embed.
+    """
+    t_width, t_height = t.shape[:2] # frame shape
+    f_width, f_height = f.shape[:2] # splat shape
+    point = (np.random.randint(-f_width + 1, t_width), np.random.randint(-f_height + 1, t_height))
+    return safe_embed(t, f, point)
+
 
 class NoSplatsException(Exception):
     pass
@@ -47,12 +56,9 @@ class Splatter(object):
                 
     def _splat_once(self, t):
         s = random.choice(self.splats)
-        tsx, tsy = t.shape[:2] # frame shape
-        ssx, ssy = s.shape[:2] # splat shape
-        dx, dy = np.random.randint(-ssx + 1, tsx), np.random.randint(-ssy + 1, tsy) # destination point
+        tx, tdx, ty, tdy, fx, fdx, fy, fdy = safe_random_embed(t, s)
+        t[tx : tdx, ty : tdy] |= s[fx : fdx, fy : fdy]
 
-        tx, tdx, ty, tdy, sx, sdx, sy, sdy = safe_embed(t, s, (dx, dy))
-        t[tx : tdx, ty : tdy] |= s[sx : sdx, sy : sdy]
     
     def splat_mask(self, m):
         "Gets a mask and splats it"
