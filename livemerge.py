@@ -142,7 +142,7 @@ def main():
             time0 = time.time()
         diff = cv2.absdiff(t, t0)
         gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-        gray_diff = cv2.medianBlur(gray_diff, 3)
+        gray_diff = cv2.medianBlur(gray_diff, 5)
         ret, mask = cv2.threshold(gray_diff, thresh, 255, cv2.THRESH_BINARY)
         vis = s.splat_mask(mask) | s.splat_mask(~mask)
         
