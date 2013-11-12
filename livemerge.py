@@ -46,6 +46,7 @@ def main():
     s = Splatter((imgHeight, imgWidth), 'splat_db')
     frames = []
     
+    pause_time = 0
     start_time = time.time()
     ret, t0 = cam.read() # First two frames
     ret, t = cam.read()
@@ -81,13 +82,15 @@ def main():
             cv2.destroyAllWindows()
             break
         elif key == ord('s'):
+            pause_start = time.time()
             if cv2.waitKey() == ord('p'):
                 cv2.imwrite('res.png', mask)
+            pause_time += time.time() - pause_start
     
     cam.release()
+    net_time = (time.time() - start_time) - pause_time
     
-    # video = cv2.VideoWriter(r"result.avi", -1, len(frames) / (time.time() - start_time), (imgWidth, imgHeight))
-    # video = cv2.VideoWriter(r"result.avi", cv2.cv.CV_FOURCC('X','V','I','D'), len(frames) / (time.time() - start_time), (imgWidth, imgHeight))
+    # video = cv2.VideoWriter(r'result.avi', cv2.cv.CV_FOURCC('X','V','I','D'), len(frames) / net_time, (imgWidth, imgHeight))
     # for frame in frames: video.write(frame)
     # video.release()
 
