@@ -1,6 +1,10 @@
 import numpy as np
 
 
+def do_nothing(*arg, **kw):
+    pass
+
+
 def rect_intersection(a, b):
     "returns intersection area of rectangles a, b"
     ax, ay, aw, ah = a
