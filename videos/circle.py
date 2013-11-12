@@ -9,9 +9,9 @@ video = cv2.VideoWriter(r"circle.avi", cv2.cv.CV_FOURCC('X','V','I','D'), 25, (w
 # video = cv2.VideoWriter(r"circle.avi", 0x58564944, 25, (width,height))
 frames = []
 
-for i in xrange(0, width + radius):
+for i in xrange(0, (width + radius)/3):
     a = np.zeros((height, width, 3), np.uint8)
-    cv2.circle(a, (i, height/2), 10, (255, 255, 255), -1)
+    cv2.circle(a, (i*3, height/2), 10, (255, 255, 255), -1)
     frames.append(a)
 
 for frame in frames: video.write(frame)
