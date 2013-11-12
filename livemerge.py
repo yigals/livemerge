@@ -11,6 +11,7 @@ from utils import do_nothing
 from splatter import Splatter
 import perturber
 
+VERSION_FORMAT = '%(prog)s 1.0'
 
 winName = 'Live Emergence'
 captureInput = 'Capture Input'
@@ -41,7 +42,7 @@ def setup(imgWidth, imgHeight):
     cv2.moveWindow(controlTrackbars, 0, imgHeight + 30)
 
 
-def main():
+def main(args):
     cam = cv2.VideoCapture(0)
     imgHeight = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
     imgWidth = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
@@ -97,9 +98,20 @@ def main():
     cam.release()
     net_time = (time.time() - start_time) - pause_time
     
-    # video = cv2.VideoWriter(r'result.avi', cv2.cv.CV_FOURCC('X','V','I','D'), len(frames) / net_time, (imgWidth, imgHeight))
-    # for frame in frames: video.write(frame)
-    # video.release()
+    if args.out_file:
+        print len(frames)
+        print net_time
+        video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), len(frames) / net_time, (imgWidth, imgHeight))
+        for frame in frames: 
+            video.write(frame)
+        video.release()
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='LivEmerge\n'
+        'Creating emerging images from video/webcam')
+    parser.add_argument('-v', '--version', action='version', version=VERSION_FORMAT)
+    parser.add_argument('-o', '--out-file', help="If specified, output is written to output file")
+    args = parser.parse_args()
+    main(args)
