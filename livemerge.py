@@ -18,17 +18,24 @@ controlTrackbars = 'Control Trackbars'
 ThreshTrackbar = 'Threshold'
 MhiDurationTrackbar = 'MHI Duration * 10'
 MaxTimeDeltaTrackbar = 'Max Time Delta * 10'
-MinRectAreaTrackbar = 'sqrt(Min Rect Area)' # this value ** 2 is the minum area motion recognition
+MinSqrtRectAreaTrackbar = 'sqrt(Min Rect Area)' # this value ** 2 is the minum area motion recognition
+
+DEFAULT_THRESH = 20
+DEFAULT_MHI = 4
+DEFAULT_TIME_DELTA = 7
+DEFAULT_SQRT_RECT_AREA = 64
+MAX_FPS = 15 # more than this hurts my eyes...
+TIME_BETWEEN_FRAMES = 1000 / 15
 
 
 def setup(imgWidth, imgHeight):
     cv2.namedWindow(winName, cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow(captureInput, cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow(controlTrackbars, cv2.WINDOW_NORMAL)
-    cv2.createTrackbar(ThreshTrackbar, controlTrackbars, 20, 255, do_nothing)
-    cv2.createTrackbar(MhiDurationTrackbar, controlTrackbars, 4, 30, do_nothing)
-    cv2.createTrackbar(MaxTimeDeltaTrackbar, controlTrackbars, 7, 30, do_nothing)
-    cv2.createTrackbar(MinRectAreaTrackbar, controlTrackbars, 64, 200, do_nothing)
+    cv2.createTrackbar(ThreshTrackbar, controlTrackbars, DEFAULT_THRESH, 255, do_nothing)
+    cv2.createTrackbar(MhiDurationTrackbar, controlTrackbars, DEFAULT_MHI, 30, do_nothing)
+    cv2.createTrackbar(MaxTimeDeltaTrackbar, controlTrackbars, DEFAULT_TIME_DELTA, 30, do_nothing)
+    cv2.createTrackbar(MinSqrtRectAreaTrackbar, controlTrackbars, DEFAULT_SQRT_RECT_AREA, 200, do_nothing)
     cv2.moveWindow(winName, 0, 0)
     cv2.moveWindow(captureInput, imgWidth + 10, 0)
     cv2.moveWindow(controlTrackbars, 0, imgHeight + 30)
@@ -51,10 +58,11 @@ def main():
     ret, t0 = cam.read() # First two frames
     ret, t = cam.read()
     while ret:
+        timestamp = time.clock()
         thresh = cv2.getTrackbarPos(ThreshTrackbar, controlTrackbars)
         mhi_duration = cv2.getTrackbarPos(MhiDurationTrackbar, controlTrackbars) / 10.0
         max_time_delta = cv2.getTrackbarPos(MaxTimeDeltaTrackbar, controlTrackbars) / 10.0
-        sqrt_rect_area = cv2.getTrackbarPos(MinRectAreaTrackbar, controlTrackbars)
+        sqrt_rect_area = cv2.getTrackbarPos(MinSqrtRectAreaTrackbar, controlTrackbars)
         
         diff = cv2.absdiff(t, t0)
         gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
@@ -62,7 +70,6 @@ def main():
         ret, mask = cv2.threshold(gray_diff, thresh, 255, cv2.THRESH_BINARY)
         vis = s.splat_mask(mask) | s.splat_mask(~mask)
         
-        timestamp = time.clock()
         cv2.updateMotionHistory(mask, motion_history, timestamp, mhi_duration)
         seg_mask, seg_bounds = cv2.segmentMotion(motion_history, timestamp, max_time_delta)
         
@@ -77,7 +84,7 @@ def main():
         t0 = t
         ret, t = cam.read()
         
-        key = cv2.waitKey(10)
+        key = cv2.waitKey(max(1, TIME_BETWEEN_FRAMES - int(time.clock() - timestamp)))
         if key == ord('q'):
             cv2.destroyAllWindows()
             break
