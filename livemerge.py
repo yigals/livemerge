@@ -25,8 +25,6 @@ DEFAULT_THRESH = 20
 DEFAULT_MHI = 4
 DEFAULT_TIME_DELTA = 7
 DEFAULT_SQRT_RECT_AREA = 64
-MAX_FPS = 15 # more than this hurts my eyes...
-TIME_BETWEEN_FRAMES = 1000 / 15
 
 
 def setup(imgWidth, imgHeight):
@@ -43,7 +41,7 @@ def setup(imgWidth, imgHeight):
 
 
 def main(args):
-    cam = cv2.VideoCapture(0)
+    cam = cv2.VideoCapture(0 if args.in_file is None else args.in_file)
     imgHeight = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
     imgWidth = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
     
@@ -59,7 +57,6 @@ def main(args):
     ret, t0 = cam.read() # First two frames
     ret, t = cam.read()
     while ret:
-        timestamp = time.clock()
         thresh = cv2.getTrackbarPos(ThreshTrackbar, controlTrackbars)
         mhi_duration = cv2.getTrackbarPos(MhiDurationTrackbar, controlTrackbars) / 10.0
         max_time_delta = cv2.getTrackbarPos(MaxTimeDeltaTrackbar, controlTrackbars) / 10.0
@@ -71,6 +68,7 @@ def main(args):
         ret, mask = cv2.threshold(gray_diff, thresh, 255, cv2.THRESH_BINARY)
         vis = s.splat_mask(mask) | s.splat_mask(~mask)
         
+        timestamp = time.clock()
         cv2.updateMotionHistory(mask, motion_history, timestamp, mhi_duration)
         seg_mask, seg_bounds = cv2.segmentMotion(motion_history, timestamp, max_time_delta)
         
@@ -84,8 +82,7 @@ def main(args):
         frames.append(cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
         ret, t = cam.read()
-        
-        key = cv2.waitKey(max(1, TIME_BETWEEN_FRAMES - int(time.clock() - timestamp)))
+        key = cv2.waitKey(40)
         if key == ord('q'):
             cv2.destroyAllWindows()
             break
@@ -99,9 +96,7 @@ def main(args):
     net_time = (time.time() - start_time) - pause_time
     
     if args.out_file:
-        print len(frames)
-        print net_time
-        video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), len(frames) / net_time, (imgWidth, imgHeight))
+        video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), 10, (imgWidth, imgHeight))
         for frame in frames: 
             video.write(frame)
         video.release()
@@ -113,5 +108,6 @@ if __name__ == '__main__':
         'Creating emerging images from video/webcam')
     parser.add_argument('-v', '--version', action='version', version=VERSION_FORMAT)
     parser.add_argument('-o', '--out-file', help="If specified, output is written to output file")
+    parser.add_argument('-i', '--in-file', help="If specified, input comes from video file and not cam")
     args = parser.parse_args()
     main(args)
