@@ -93,7 +93,6 @@ def main(args):
             pause_time += time.time() - pause_start
     
     cam.release()
-    net_time = (time.time() - start_time) - pause_time
     
     if args.out_file:
         video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), 10, (imgWidth, imgHeight))
