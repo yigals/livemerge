@@ -4,6 +4,7 @@ import random
 import os
 
 import utils
+import perturber
 
 
 class NoSplatsException(Exception):
@@ -26,6 +27,7 @@ class Splatter(object):
 
     def _splat_once(self, t):
         s = random.choice(self.splats)
+        s = perturber.rand_rotate(perturber.rand_e_d(s))
         utils.safe_random_embed(t, s, mask=True)
 
     
