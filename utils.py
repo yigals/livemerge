@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 
 def do_nothing(*arg, **kw):
@@ -45,3 +46,24 @@ def safe_random_embed(t, f, mask=False):
     f_width, f_height = f.shape[:2] # splat shape
     point = (np.random.randint(-f_width + 1, t_width), np.random.randint(-f_height + 1, t_height))
     safe_embed(t, f, point, mask)
+    
+def combine_images(a, b, dst=None):
+    """
+    Returns the two images side by side. There's an optional dst argument to
+    avoid repeated mallocs.
+    Assumes images are of same height.
+    Returns color image.
+    """
+    if len(a.shape) < 3:
+        a = cv2.cvtColor(a, cv2.COLOR_GRAY2BGR)
+    if len(b.shape) < 3:
+        b = cv2.cvtColor(b, cv2.COLOR_GRAY2BGR)
+        
+    ah, aw = a.shape[:2]
+    _, bw = b.shape[:2] # Assuming same height
+    if not dst:
+        dst = np.zeros((ah, aw + bw, 3), np.uint8)
+        
+    dst[:ah, :aw] = a[:,:]
+    dst[:ah, aw:aw+bw] = b[:,:]
+    return dst
