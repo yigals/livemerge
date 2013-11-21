@@ -10,11 +10,11 @@ import time
 from utils import do_nothing
 from splatter import Splatter
 import perturber
+import utils
 
 VERSION_FORMAT = '%(prog)s 1.0'
 
 winName = 'Live Emergence'
-captureInput = 'Capture Input'
 controlTrackbars = 'Control Trackbars'
 ThreshTrackbar = 'Threshold'
 MhiDurationTrackbar = 'MHI Duration * 10'
@@ -29,14 +29,12 @@ DEFAULT_SQRT_RECT_AREA = 64
 
 def setup(imgWidth, imgHeight):
     cv2.namedWindow(winName, cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow(captureInput, cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow(controlTrackbars, cv2.WINDOW_NORMAL)
     cv2.createTrackbar(ThreshTrackbar, controlTrackbars, DEFAULT_THRESH, 255, do_nothing)
     cv2.createTrackbar(MhiDurationTrackbar, controlTrackbars, DEFAULT_MHI, 30, do_nothing)
     cv2.createTrackbar(MaxTimeDeltaTrackbar, controlTrackbars, DEFAULT_TIME_DELTA, 30, do_nothing)
     cv2.createTrackbar(MinSqrtRectAreaTrackbar, controlTrackbars, DEFAULT_SQRT_RECT_AREA, 200, do_nothing)
     cv2.moveWindow(winName, 0, 0)
-    cv2.moveWindow(captureInput, imgWidth + 10, 0)
     cv2.moveWindow(controlTrackbars, 0, imgHeight + 30)
 
 
@@ -44,6 +42,7 @@ def main(args):
     cam = cv2.VideoCapture(0 if args.in_file is None else args.in_file)
     imgHeight = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
     imgWidth = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
+    comb_vis = np.zeros((imgHeight, 2*imgWidth), np.uint8)
     
     setup(imgWidth, imgHeight)
 
@@ -77,9 +76,12 @@ def main(args):
             x, y, w, h = rect
             cv2.rectangle(t, (x, y), (x+w, y+h), (0, 255, 0))
         vis |= perturber.c_p_p(mask, rects)
-        cv2.imshow(captureInput, t)
+        
+        if not args.dont_show_capture:
+            vis = utils.combine_images(vis, t)
+        
         cv2.imshow(winName, vis)
-        frames.append(cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
+        frames.append(vis if len(vis.shape) == 3 else cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
         ret, t = cam.read()
         key = cv2.waitKey(40)
@@ -87,15 +89,15 @@ def main(args):
             cv2.destroyAllWindows()
             break
         elif key == ord('s'):
-            pause_start = time.time()
             if cv2.waitKey() == ord('p'):
                 cv2.imwrite('res.png', mask)
-            pause_time += time.time() - pause_start
     
     cam.release()
     
     if args.out_file:
-        video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), 10, (imgWidth, imgHeight))
+        h, w = frames[0].shape[:2]
+        # video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), 10, (w, h))
+        video = cv2.VideoWriter(args.out_file, -1, 10, (w, h))
         for frame in frames: 
             video.write(frame)
         video.release()
@@ -106,7 +108,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='LivEmerge\n'
         'Creating emerging images from video/webcam')
     parser.add_argument('-v', '--version', action='version', version=VERSION_FORMAT)
-    parser.add_argument('-o', '--out-file', help="If specified, output is written to output file")
+    parser.add_argument('-d', '--dont-show-capture', action="store_true", help="Show only algorithm output")
+    parser.add_argument('-o', '--out-file', help="Write to output file")
     parser.add_argument('-i', '--in-file', help="If specified, input comes from video file and not cam")
     args = parser.parse_args()
     main(args)
