@@ -28,7 +28,7 @@ DEFAULT_SQRT_RECT_AREA = 64
 
 
 def setup(imgWidth, imgHeight):
-    cv2.namedWindow(winName, cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow(winName, cv2.WINDOW_NORMAL)
     cv2.namedWindow(controlTrackbars, cv2.WINDOW_NORMAL)
     cv2.createTrackbar(ThreshTrackbar, controlTrackbars, DEFAULT_THRESH, 255, do_nothing)
     cv2.createTrackbar(MhiDurationTrackbar, controlTrackbars, DEFAULT_MHI, 30, do_nothing)
@@ -49,12 +49,18 @@ def main(args):
     motion_history = np.zeros((imgHeight, imgWidth), np.float32)
     
     s = Splatter((imgHeight, imgWidth), 'splat_db')
-    frames = []
     
     pause_time = 0
     start_time = time.time()
     ret, t0 = cam.read() # First two frames
     ret, t = cam.read()
+
+    if args.out_file:
+        h, w = t.shape[:2]
+        if not args.dont_show_capture: w *= 2
+        video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), 10, (w, h))
+        # video = cv2.VideoWriter(args.out_file, -1, 10, (w, h))
+
     while ret:
         thresh = cv2.getTrackbarPos(ThreshTrackbar, controlTrackbars)
         mhi_duration = cv2.getTrackbarPos(MhiDurationTrackbar, controlTrackbars) / 10.0
@@ -81,7 +87,8 @@ def main(args):
             vis = utils.combine_images(vis, t)
         
         cv2.imshow(winName, vis)
-        frames.append(vis if len(vis.shape) == 3 else cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
+        if args.out_file:
+            video.write(vis if len(vis.shape) == 3 else cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
         ret, t = cam.read()
         key = cv2.waitKey(40)
@@ -93,13 +100,8 @@ def main(args):
                 cv2.imwrite('res.png', mask)
     
     cam.release()
-    
+
     if args.out_file:
-        h, w = frames[0].shape[:2]
-        # video = cv2.VideoWriter(args.out_file, cv2.cv.CV_FOURCC('X','V','I','D'), 10, (w, h))
-        video = cv2.VideoWriter(args.out_file, -1, 10, (w, h))
-        for frame in frames: 
-            video.write(frame)
         video.release()
 
 if __name__ == '__main__':
