@@ -54,6 +54,9 @@ def main(args):
     start_time = time.time()
     ret, t0 = cam.read() # First two frames
     ret, t = cam.read()
+    if args.flip:
+        t0 = cv2.flip(t0, flipCode=1)
+        t = cv2.flip(t, flipCode=1)
 
     if args.out_file:
         h, w = t.shape[:2]
@@ -91,6 +94,8 @@ def main(args):
             video.write(vis if len(vis.shape) == 3 else cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR))
         t0 = t
         ret, t = cam.read()
+        if args.flip:
+            t = cv2.flip(t, flipCode=1)
         key = cv2.waitKey(40)
         if key == ord('q'):
             cv2.destroyAllWindows()
@@ -112,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', action='version', version=VERSION_FORMAT)
     parser.add_argument('-d', '--dont-show-capture', action="store_true", help="Show only algorithm output")
     parser.add_argument('-o', '--out-file', help="Write to output file")
+    parser.add_argument('-f', '--flip', action="store_true", help="Flip images from camera (mine requires it...)")
     parser.add_argument('-i', '--in-file', help="If specified, input comes from video file and not cam")
     args = parser.parse_args()
     main(args)
