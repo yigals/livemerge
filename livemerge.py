@@ -39,7 +39,15 @@ def setup(imgWidth, imgHeight):
 
 
 def main(args):
-    cam = cv2.VideoCapture(0 if args.in_file is None else args.in_file)
+    if args.in_file:
+        try: 
+            inf = int(args.in_file)
+        except ValueError: 
+            inf = args.in_file
+    else: 
+        inf = 0
+        
+    cam = cv2.VideoCapture(inf)
     imgHeight = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
     imgWidth = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
     comb_vis = np.zeros((imgHeight, 2*imgWidth), np.uint8)
